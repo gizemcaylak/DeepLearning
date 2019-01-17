@@ -4,7 +4,7 @@
 let sigmoid z = 1.0/.(1.0+.exp(-.z));;
 let derivative_sigmoid s = (s*.(1.0 -. s));;
 let relu z = max 0. z;;
-let derivative_relu s = if s <= 0 then 0 else 1;;
+let derivative_relu s = if s <= 0. then 0. else 1.;;
 
 (* take square of x *)
 let square x = x *. x;;
@@ -34,6 +34,17 @@ type network = {
  * Return appended list
  *)
 let append_el el f_list = f_list@[el];;
+
+(* Sum the float element of an array *)
+let sum l = Array.fold_left (+.) 0. l;;
+
+(* Create n by m matrix that have elements equal to init *)
+let matrix n m init =
+	let result = Array.make n (Array.make m init) in
+	for i = 1 to n - 1 do
+	  result.(i) <- Array.make m init
+	done;
+	result;;
 
 (* replace an element in a list 
  * l 	: list
@@ -298,16 +309,18 @@ let forward_propagate ann input activation_func =
  * ann 		: network
  * expected	: a list of floats, indicates the probability of having each class label.
  *)
-let backpropagate ann expected =
+let backpropagate ann expected activation_func =
 	(* backpropagate output layer *)
 	let output_l = (get_layer ((Hashtbl.length ann.layers)-1) ann) in
 	
 	let neurons = output_l.neurons in
-
+	let derivative = ref derivative_relu in
+	if activation_func = 0 then derivative := derivative_sigmoid;
+	 
 	Hashtbl.iter ( fun id n ->
 		let diff = ((n.output)-. (List.nth expected id)) in
 		n.prev_delta <- n.delta; 
-		n.delta <- (diff *. (derivative_sigmoid n.output));
+		n.delta <- (diff *. (!derivative n.output));
 	) neurons;
 
 	let err = ref 0. in
@@ -322,7 +335,7 @@ let backpropagate ann expected =
 			)(next_l.neurons);
 			let curr_n = (get_neuron j curr_l) in
 			curr_n.prev_delta <- curr_n.delta; (* add moment: keep one previous delta*)
-			curr_n.delta <- (!err *. (derivative_sigmoid curr_n.output));
+			curr_n.delta <- (!err *. (!derivative curr_n.output));
 		done;
 	done;;
 
@@ -372,24 +385,27 @@ let update_weights ann input learning_rate alpha =
 
 (* 
  * Train the network
- * ann 			: network
- * train_data 	: a list of list of float
- * labels 		: a list of float indicates class labels for each sample
- * epochs 		: the number of iterations
- * learning_rate: a float number that determines how big the step for each update of parameters.
- * labels_no  	: the number of unique labels
- * lr_method	: 0 = learning rate is fixed for all epochs
- 				  1 = learning rate is decreasing for every 150 epochs
- * alpha 		: a float number that determines what fraction of the previous weight updates are included into the learning rule
+ * ann 				: network
+ * train_data 		: a list of list of float
+ * labels 			: a list of float indicates class labels for each sample
+ * epochs 			: the number of iterations
+ * learning_rate	: a float number that determines how big the step for each update of parameters.
+ * labels_no  		: the number of unique labels
+ * lr_method		: 0 = learning rate is fixed for all epochs
+ 				  	  1 = learning rate is decreasing for every sqrt(sample size) epochs
+ * alpha 			: a float number that determines what fraction of the previous weight updates are included into the learning rule
+ * activation_func 	: 0 = sigmoid function
+ 					  1 = relu function
  *)
-let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method alpha =
+let train_network ann train_data labels epochs learning_rate labels_no lr_method alpha activation_func =
 	let total_err = ref 0. in
 	let outputs = ref [] in
+	let sample_size = float_of_int(List.length train_data) in
 	for i = 1 to epochs do
 		total_err := 0.;
 		let expected = ref [] in
 		List.iter2 (fun sample label->
-			outputs := !(forward_propagate ann sample 0);
+			outputs := !(forward_propagate ann sample activation_func);
 			expected := [];
 			for k = 0 to labels_no-1 do
 				if k = label then
@@ -399,12 +415,12 @@ let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method 
 
 				total_err := !total_err +. (square ((List.nth !outputs k)-.(List.nth !expected k)));
 			done;
-			backpropagate ann !expected;
+			backpropagate ann !expected activation_func;
 			update_weights ann sample !learning_rate alpha;
 		) train_data labels;
 
 		if lr_method = 1 then begin
-			if i mod 300 = 0 then learning_rate := !learning_rate /. 1.5;
+			if i mod int_of_float((sqrt sample_size)) = 0 then learning_rate := !learning_rate /. 1.5;
 		end;
 		Printf.printf "Epoch = %d\t Lrate = %f\t Error = %f" i !learning_rate !total_err;
 		print_newline ();
@@ -415,8 +431,8 @@ let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method 
  * input : list of float numbers -> sample
  * Returns the label
  *)
-let predict ann input =
-	let outputs = !(forward_propagate ann input 0) in
+let predict ann input activation_func=
+	let outputs = !(forward_propagate ann input activation_func) in
 	let max = ref (List.nth outputs 0) in
 	let ind_max = ref 0 in
 	let counter = ref 0 in
@@ -428,6 +444,19 @@ let predict ann input =
 		counter := !counter + 1;
 	) outputs;
 	!ind_max;;
+
+(* 
+ * Creates confusion matrix where columns are true values, rows are predicted values
+ * Returns labels_no by labels_no array matrix
+ *)
+let create_confusion_matrix ann data labels labels_no activation_func =
+	let confusion_matrix = matrix labels_no labels_no 0. in
+
+	List.iter2 (fun sample label ->
+		let prediction = (predict ann sample activation_func) in
+		confusion_matrix.(label).(prediction) <- (confusion_matrix.(label).(prediction))+.1.;
+	) data labels;
+	confusion_matrix;;
 
 let create_test_network2 () =
 	let ann = (initialize_network 1 [1] 2 2) in
