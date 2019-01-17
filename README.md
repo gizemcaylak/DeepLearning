@@ -60,13 +60,13 @@ $ ./ann DATASET/MNIST/train_data.txt DATASET/MNIST/test_data.txt \  0.5 1 0.01 1
 	Run on Iris data
 
 ### Terminal code
-(1)
+(1) <!-- with Sigmoid Function -->
 ```
-$ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.8 1 0.05 500 0 2 8 8	<!-- with Sigmoid Function -->
+$ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.8 1 0.05 500 0 2 8 8	
 ```
-(2)
+(2) <!-- with Relu Function    -->
 ```
-$ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.1 1 0.05 500 1 2 8 8	<!-- with Relu Function    -->
+$ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.1 1 0.05 500 1 2 8 8	
 ```
 
 ## Wine
