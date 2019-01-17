@@ -2,8 +2,10 @@
 OCaml implementation of fully connected deep neural network
 
 # How to compile the code?
-Type make on the terminal
+Just type make on the terminal!
+```
 $ make
+```
 
 # How to run the code?
 
