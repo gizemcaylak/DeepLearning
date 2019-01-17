@@ -2,7 +2,7 @@
 
 (* Activation functions and derivatives *)
 let sigmoid z = 1.0/.(1.0+.exp(-.z));;
-let derivative_sigmoid s = s*.(1.0 -. s);;
+let derivative_sigmoid s = (s*.(1.0 -. s));;
 let relu z = max 0. z;;
 let derivative_relu s = if s <= 0 then 0 else 1;;
 
@@ -121,11 +121,13 @@ let normalize data mean sd =
 	List.iter (fun row ->
 		let sample = ref [] in
 		List.iteri (fun id r->
+			(* Printf.printf "%f %f %f %f\n" r (List.nth mean id) (List.nth sd id) ((r-.(List.nth mean id))/.(List.nth sd id)); *)
 			if (List.nth sd id) = 0. then begin
 				sample := append_el (r-.((List.nth mean id))) !sample;
 			end
-			else
-				sample := append_el (r-.((List.nth mean id)/.(List.nth sd id))) !sample;
+			else begin
+				sample := append_el (((r-.(List.nth mean id))/.(List.nth sd id))) !sample;
+			end
 		)row;
 		normalized_data := append_el !sample !normalized_data;
 	)data;
@@ -320,7 +322,7 @@ let backpropagate ann expected =
 			)(next_l.neurons);
 			let curr_n = (get_neuron j curr_l) in
 			curr_n.prev_delta <- curr_n.delta; (* add moment: keep one previous delta*)
-			curr_n.delta <- !err *. (derivative_sigmoid curr_n.output);
+			curr_n.delta <- (!err *. (derivative_sigmoid curr_n.output));
 		done;
 	done;;
 
@@ -341,10 +343,10 @@ let update_weights ann input learning_rate alpha =
 	let neurons = first_l.neurons in
 	Hashtbl.iter ( fun id n ->
 		let weights = ref [] in
-		for i = 0 to (List.length !tmp)-1 do
-			weights := append_el ((List.nth n.weights i) -. (learning_rate *. (List.nth !tmp i) *. ((1.-.alpha) *. n.delta+.alpha*.n.prev_delta))) !weights;
-		done;
-		weights := append_el ((List.nth n.weights (List.length !tmp)) -. (learning_rate *. ((1.-.alpha) *. n.delta+.alpha *. n.prev_delta))) !weights;
+		List.iter2 (fun t w->	
+			weights := append_el (w -. (learning_rate *. t *. (((1.-.alpha) *. n.delta)+.(alpha*.n.prev_delta)))) !weights;
+		) !tmp (List.rev (List.tl (List.rev (n.weights))));		
+		weights := append_el ((List.nth n.weights (List.length !tmp)) -. (learning_rate *. (((1.-.alpha) *. n.delta)+.(alpha *. n.prev_delta)))) !weights;
 		n.weights <- !weights;
 	) neurons;
 	
@@ -361,9 +363,9 @@ let update_weights ann input learning_rate alpha =
 		Hashtbl.iter (fun id curr_n ->
 			let weights = ref [] in
 			List.iter2 (fun t w->			
-				weights := append_el (w -. (learning_rate *.t *. ((1.-.alpha) *. curr_n.delta +. alpha*.curr_n.prev_delta))) !weights;
+				weights := append_el (w -. (learning_rate *.t *. (((1.-.alpha) *. (curr_n.delta))+. (alpha*.(curr_n.prev_delta))))) !weights;
 			) !tmp (List.rev (List.tl (List.rev (curr_n.weights))));		
-			weights := append_el ((List.nth curr_n.weights (List.length !tmp)) -. (learning_rate *. ((1.-.alpha) *. curr_n.delta +. alpha *. curr_n.prev_delta))) !weights;
+			weights := append_el ((List.nth curr_n.weights (List.length !tmp)) -. (learning_rate *. (((1.-.alpha) *. (curr_n.delta)) +. (alpha *. (curr_n.prev_delta))))) !weights;
 			curr_n.weights <- !weights;
 		) (curr_l.neurons);
 	done;;
@@ -386,7 +388,6 @@ let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method 
 	for i = 1 to epochs do
 		total_err := 0.;
 		let expected = ref [] in
-		let counter = ref 0 in
 		List.iter2 (fun sample label->
 			outputs := !(forward_propagate ann sample 0);
 			expected := [];
@@ -398,7 +399,6 @@ let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method 
 
 				total_err := !total_err +. (square ((List.nth !outputs k)-.(List.nth !expected k)));
 			done;
-			counter := !counter+1;
 			backpropagate ann !expected;
 			update_weights ann sample !learning_rate alpha;
 		) train_data labels;
@@ -433,10 +433,10 @@ let create_test_network2 () =
 	let ann = (initialize_network 1 [1] 2 2) in
 	 (* create the first hidden layer *)
 	let first_layer = (get_layer 0 ann) in
-	let weights_0 = [0.4; 0.3; 0.2] in
+	let weights_0 = [0.13436424411240122; 0.8474337369372327; 0.763774618976614] in
 	(get_neuron 0 first_layer).weights <- weights_0;
-	let weights_1 = [0.3; 0.1] in
-	let weights_2 = [0.4; 0.3] in
+	let weights_1 = [0.2550690257394217; 0.49543508709194095] in
+	let weights_2 = [0.4494910647887381; 0.651592972722763] in
 
 	let sec_layer = (get_layer 1 ann) in
 	(get_neuron 0 sec_layer).weights <- weights_1;
@@ -481,89 +481,3 @@ let create_test_network () =
 	(get_neuron 1 sec_layer).weights <- weights_3;
 
 	ann;;
-
-let main () =
-	
-	(* Read train files *)
-	let train_filepath = "./DATASET/Iris/train.txt" in
-	let m_train_data = (read_file train_filepath) in
-	let train_data = (process_file m_train_data ',') in
-
-	(* Read test files *)
-	let test_filepath = "./DATASET/Iris/test.txt" in
-	print_string "Data load is started" ;
-	print_newline ();
-	let m_test_data = (read_file test_filepath) in
-	print_string "Data load is complete" ;
-	print_newline ();
-	print_string "Data process is started" ;
-	print_newline ();
-	let test_data = (process_file m_test_data ',') in
-	print_string "Data process is completed" ;
-	print_newline ();
-
-	(* Get the statistics, mean and standard deviation, for data *)
-	print_string "Calculating mean and standard deviation for train data.." ;
-	print_newline ();
-	let stats = (get_statistics (fst train_data)) in
-	print_string "Mean and standard deviation are calculated" ;
-	print_newline ();
-	let mean = (fst stats) in
-	let std = (snd stats) in
-	print_string "Normalization is started" ;
-	print_newline ();
-	let normalized_train = normalize (fst train_data) mean std in
-	let normalized_test = normalize (fst test_data) mean std in
-	print_string "Normalization is completed" ;
-	print_newline ();
-
-	let label_no = (List.length (List.sort_uniq compare (snd train_data))) in
-	let input_dim = (List.length (List.nth normalized_train 0)) in
-	let learning_rate = ref 0.5 in
-	let hidden_layer_no = 1 in
-	let neuron_no_per_layer = [6] in
-	let epochs = 500 in
-	(* Creates the network *)
-	print_string "Network creation is started" ;
-	print_newline ();
-	let ann = (initialize_network hidden_layer_no neuron_no_per_layer input_dim label_no) in
-	print_string "Network is created" ;
-	print_newline ();
-
-	Printf.printf "Input dimension: %d " input_dim;
-	print_newline ();
-	Printf.printf "The number of unique labels: %d " label_no;
-	print_newline ();
-	Printf.printf "Initial learning rate: %f " !learning_rate;
-	print_newline ();
-
-	print_string "Training is started" ;
-	print_newline ();
-	trainNetwork ann normalized_train (snd train_data) epochs learning_rate label_no 1 0.7;
-	print_string "Training is completed" ;
-	print_newline ();
-
-	(* Prediction *)
-	(* let n = label_no in *)
-	(* let confMat = Array.make_matrix n n 0 in *)
-	print_string "Prediction is started" ;
-	print_newline ();
-	let accuracy = ref 0. in
-	List.iter2 (fun sample label ->
-		let prediction = (predict ann sample) in
-		if label = prediction then accuracy := !accuracy +. 1.;
-	) normalized_train (snd train_data);
-	accuracy := !accuracy /. (float_of_int (List.length (snd train_data)));
-	Printf.printf "Train accuracy: %f \n" !accuracy;
-
-	accuracy := 0.;
-	List.iter2 (fun sample label->
-		let prediction = (predict ann sample) in
-		if label = prediction then accuracy := !accuracy +. 1.;
-	) normalized_test (snd test_data);
-	accuracy := !accuracy /. (float_of_int(List.length (snd test_data)));
-	Printf.printf "Test accuracy: %f \n" !accuracy;
-	
-	exit 0;;
-
-main ();;
