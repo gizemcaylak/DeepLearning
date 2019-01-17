@@ -11,18 +11,18 @@ $ make
 
 ### Parameters
 ```
-@train_filepath				: file path to train file
-@test_filepath				: file path to corresponding test file
-@delimeter 					: a char that is field delimeter in the sequence of floating numbers for each 
+@train_filepath			: file path to train file
+@test_filepath			: file path to corresponding test file
+@delimeter 			: a char that is field delimeter in the sequence of floating numbers for each 
 								string in data e.g. ','
-@Learning_rate 				: initial learning rate, a floating point number generally small
-@learning_rate_method		:	0 = learning rate does not change througout program
-								1 = learning rate decreases after every sqrt(sample size) iteration
-@alpha						: a floating point number between [0,1] to determine the effect of previous 								weight changes
-@epochs						: the number of epochs	
-@activation_func			: 0 = sigmoid function
-							  1	= relu function					
-@hidden_layer_no 			: the number of hidden layers in the network
+@Learning_rate 			: initial learning rate, a floating point number generally small
+@learning_rate_method		:0 = learning rate does not change througout program
+				 1 = learning rate decreases after every sqrt(sample size) iteration
+@alpha				: a floating point number between [0,1] to determine the effect of previous weight changes
+@epochs				: the number of epochs	
+@activation_func		: 0 = sigmoid function
+				  1 = relu function					
+@hidden_layer_no 		: the number of hidden layers in the network
 @neuron_no_per_layer		: the number of neurons in each hidden layer
 ```
 
