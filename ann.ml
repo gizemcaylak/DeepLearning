@@ -28,9 +28,26 @@ type network = {
 	};;
 
 
-(* append a float element to the list *)
+(* append an element to the list 
+ * el 		: element to be appended
+ * f_list 	: list
+ * Return appended list
+ *)
 let append_el el f_list = f_list@[el];;
 
+(* replace an element in a list 
+ * l 	: list
+ * pos 	: position to be replaced
+ * a 	: new element which would replace old element
+ * Return new list
+ *)
+let replace l pos a  = List.mapi (fun i x -> if i = pos then a else x) l;;
+
+(* 
+ * reads a file line by line
+ * filename	: path of the file to read
+ * Return list of lines
+ *)
 let read_file filename = 
 	let lines = ref [] in
 	let chan = open_in filename in
@@ -42,7 +59,12 @@ let read_file filename =
 	  close_in chan;
 	  List.rev !lines ;;
 
-(* Parse the rows of the data based on the delimeter *)
+(* Parse the rows of the data based on the delimeter 
+ * data 		: list of strings where each string consists of equal number of floating numbers 
+ 				   and the last number of each string is label
+ * delimeter	: field delimeter in the sequence of floating numbers for each string in data
+ * Return features and label data
+ *)
 let process_file data delimeter = 
 	let p_data = ref [] in
 	let labels = ref [] in
@@ -58,27 +80,60 @@ let process_file data delimeter =
 	convert_to_nums data;
 	(!p_data, !labels);;
 
-let getStatistics data =
+(* calculate the mean and standard deviation per column of data 
+ * data = list of list of float
+ * Return tuple: (list of float:mean for each column, list of float:standard deviation for each column)
+ *)
+let get_statistics data =
+	let length = float_of_int (List.length data) in
 	let mean = ref [] in
 	let sd = ref [] in
 
-	List.iter ( fun r ->
-		mean := append_el r !mean;
-	) (List.hd data);
-	let curr_mean = ref 0. in
-	let curr_sd = ref 0. in
-	let counter := 
-		List.iter ( fun r->
-			
-		) (List.tl data) 
-	)mean;
-	let rec calc cdr =
-		List.iter ()
-		 mean := append_el (List.hd row) !mean;
-		calc List.tl row
+	for col = 0 to ((List.length(List.hd data))-1) do
+		(* calculate the mean per column *)
+		let curr_mean = ref 0. in
+		List.iter ( fun row ->
+			curr_mean := !curr_mean +. (List.nth row col);
+		)data;
+		curr_mean := !curr_mean /.length;
 
-let normalizeData data mean sd =
-(* create a neuron with specified id *)
+		(* calculate the std per column *)
+		let curr_std = ref 0. in
+		List.iter ( fun row ->
+			curr_std := !curr_std +. ((!curr_mean -. (List.nth row col))*.(!curr_mean -. (List.nth row col)));
+		) data;
+		curr_std := !curr_std /.length;
+		curr_std := sqrt !curr_std;
+
+		mean := append_el !curr_mean !mean;
+		sd := append_el !curr_std !sd;
+	done;
+	(!mean, !sd);;
+
+(* normalize data based on the standard score: ((X-mean)/deviance) 
+ * data 	: list of list of float
+ * mean 	: list of float (means for each column of data)
+ * sd 		: list of float (sdev for each column of data)
+ * Return list of list of float (normalized data)
+ *)
+let normalize data mean sd =
+	let normalized_data = ref [] in
+	List.iter (fun row ->
+		let sample = ref [] in
+		List.iteri (fun id r->
+			if (List.nth sd id) = 0. then begin
+				sample := append_el (r-.((List.nth mean id))) !sample;
+			end
+			else
+				sample := append_el (r-.((List.nth mean id)/.(List.nth sd id))) !sample;
+		)row;
+		normalized_data := append_el !sample !normalized_data;
+	)data;
+	!normalized_data;;
+
+(* create a neuron with specified id 
+ * neuron_id : integer id (unique id of neuron)
+ *)
 let create_neuron neuron_id = {
 	output = 0.; 
 	weights = []; 
@@ -87,23 +142,28 @@ let create_neuron neuron_id = {
 	neuron_id = neuron_id
 };;
 
-(* create a layer with specified id with mutable look up table that has initial size neuron_no*)
+(* create a layer with specified id with mutable look up table that has initial size neuron_no
+ * neuron_no 	: integer (initial number of neurons to be created)
+ * layer_id 	: integer id (unique id of layer_id)
+ *)
 let create_layer neuron_no layer_id = {
 	neurons = Hashtbl.create neuron_no; 
 	next_neuron_id = 0; 
 	layer_id = layer_id
 };;
 
-(* create a network with specified id with mutable look up table that has initial size layer_no*)
+(* create a network with specified id with mutable look up table that has initial size layer_no
+ * layer_no : integer (initial number of layers to be created)
+ *)
 let create_network layer_no = {
 	layers = Hashtbl.create layer_no; 
 	next_layer_id = 0
 };;
 
-(*  returns the neuron with specified id with in specified layer *)
+(*  returns the neuron with specified neuron_id with in specified layer *)
 let get_neuron neuron_id layer = Hashtbl.find layer.neurons neuron_id;;
 
-(*  returns the layer with specified id with in specified network *)
+(*  returns the layer with specified layer_id with in specified network ann *)
 let get_layer layer_id ann = Hashtbl.find ann.layers layer_id;;
 
 (* Print the network layer by layer*)
@@ -113,14 +173,13 @@ let print_network ann =
 		Hashtbl.iter (fun id neurons -> Printf.printf "Neuron_%d:\n Output: %f\n Delta: %f\n" id neurons.output neurons.delta; 
 				List.iter (Printf.printf "  %f\n") neurons.weights) neurons;) layers;;
 	
-
 (* Initializes neuron weights randomly *)
 let randomly_initialize_weights neuron_id layer prev_layer_size =
 	Random.self_init();
 	let neuron = (get_neuron neuron_id layer) in
 	let counter = ref 0 in
 	let rec random_append counter =
-		let random_n = (Random.float 2.)-. 1. in
+		let random_n = (Random.float 2.)-. 1. in (* Random number between -1 and 1 *)
 		neuron.weights <- append_el random_n neuron.weights;
 		counter := !counter + 1;
 		if !counter < prev_layer_size then random_append counter in
@@ -143,7 +202,6 @@ let add_multiple_neuron neuron_no layer prev_layer_size =
 		if !counter < neuron_no then add_neurons counter in
 	add_neurons counter;;	
 	
-
 (* Add newly created layer to the network *)
 let add_layer layer ann = 
 	let id = ann.next_layer_id in
@@ -153,11 +211,11 @@ let add_layer layer ann =
 
 (* 
  * Creates the network with specified properties such as number of layers and neurons. 
+ * hidden_layer_no 				: the number of hidden layers
+ * neuron_no_per_layer 			: a list that contains the number of neurons in each hidden layer
+ * input_dim 					: the dimension of the input
+ * output_dim 					: the number of the labels, the neurons in the output layer
  * weight_initialization_choice : 0 = random_init, 1 = pretraining?
- * layer_no: the number of hidden layers
- * input_dim: the dimension of the input
- * output_dim: the number of the labels, the neurons in the output layer
- * neuron_no_per_layer: a list that contains the number of neurons in each hidden layer
  *)
 let initialize_network hidden_layer_no neuron_no_per_layer input_dim output_dim =
 	
@@ -184,8 +242,9 @@ let initialize_network hidden_layer_no neuron_no_per_layer input_dim output_dim 
 	ann;;
 
 (* calculate "weighted sum" of inputs added a bias 
- *
- *
+ * weights 	: a list of float numbers
+ * input 	: a list of float numbers
+ * return activation result, float number
  *)
 let activate weights input =
 	let activation = ref (List.hd (List.rev weights)) in (* activation = bias *)
@@ -196,9 +255,12 @@ let activate weights input =
 	!activation;;
 
 (* 
- * ann: network
- * input: 
- * activation_func
+ * Propagates input to the hidden units at each layer and finally produce the output
+ * ann 				: network
+ * input 			: a list of float numbers to be propagated
+ * activation_func	: 	0 = sigmoid function
+ 						1 = relu function
+ * Return the final output probabilities
  *)
 let forward_propagate ann input activation_func =
 	let next_inputs = ref [] in
@@ -207,8 +269,10 @@ let forward_propagate ann input activation_func =
 	) input;
 
 	let outputs = ref [] in
+	(* Propagate the input layer by layer *)
 	for i = 0 to ((Hashtbl.length ann.layers)-1) do
 		let curr_l = (get_layer i ann) in
+		(* Calculate the output for each layer *)
 		for j = 0 to ((Hashtbl.length curr_l.neurons)-1) do
 			let curr_n = (get_neuron j curr_l) in
 			let activation =  ref (activate curr_n.weights next_inputs) in
@@ -228,9 +292,9 @@ let forward_propagate ann input activation_func =
 	next_inputs;;
 
 (*  
- * Calculate a gradient that is needed in the calculation of the weights to be used in the network
- * ann: network
- * expected: 
+ * calculate a gradient that is needed in the calculation of the weights to be used in the network
+ * ann 		: network
+ * expected	: a list of floats, indicates the probability of having each class label.
  *)
 let backpropagate ann expected =
 	(* backpropagate output layer *)
@@ -260,7 +324,14 @@ let backpropagate ann expected =
 		done;
 	done;;
 
-
+(*  
+ * Update the weights for each sample based on the gradient loss function
+ * The momentum is used to increase the stability. 
+ * ann 			: network
+ * input 		: the list of float (sample)
+ * learning_rate: a float number that determines how big the step for each update of parameters.
+ * alpha		: a float number that determines what fraction of the previous weight updates are included into the learning rule
+ *)
 let update_weights ann input learning_rate alpha =
 	let tmp = ref [] in
 	tmp := List.append input !tmp;
@@ -277,6 +348,7 @@ let update_weights ann input learning_rate alpha =
 		n.weights <- !weights;
 	) neurons;
 	
+	(* Update weigths for other hidden layers *)
 	for i = 1 to ((Hashtbl.length ann.layers)-1) do
 		tmp := [];
 		let curr_l = (get_layer i ann) in
@@ -285,6 +357,7 @@ let update_weights ann input learning_rate alpha =
 				let curr_n = (get_neuron j prev_l) in
 				tmp := append_el (curr_n.output) !tmp;
 		done;
+		(* calculate new weigths based on update formula *)
 		Hashtbl.iter (fun id curr_n ->
 			let weights = ref [] in
 			List.iter2 (fun t w->			
@@ -296,8 +369,16 @@ let update_weights ann input learning_rate alpha =
 	done;;
 
 (* 
- *
- * labels_no : number of classes
+ * Train the network
+ * ann 			: network
+ * train_data 	: a list of list of float
+ * labels 		: a list of float indicates class labels for each sample
+ * epochs 		: the number of iterations
+ * learning_rate: a float number that determines how big the step for each update of parameters.
+ * labels_no  	: the number of unique labels
+ * lr_method	: 0 = learning rate is fixed for all epochs
+ 				  1 = learning rate is decreasing for every 150 epochs
+ * alpha 		: a float number that determines what fraction of the previous weight updates are included into the learning rule
  *)
 let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method alpha =
 	let total_err = ref 0. in
@@ -329,7 +410,11 @@ let trainNetwork ann train_data labels epochs learning_rate labels_no lr_method 
 		print_newline ();
 	done;;
 
-
+(* Predict the label of a sample after training
+ * ann 	 : network
+ * input : list of float numbers -> sample
+ * Returns the label
+ *)
 let predict ann input =
 	let outputs = !(forward_propagate ann input 0) in
 	let max = ref (List.nth outputs 0) in
@@ -396,25 +481,15 @@ let create_test_network () =
 	(get_neuron 1 sec_layer).weights <- weights_3;
 
 	ann;;
-(*
-
-let getStatistics (data, row, col, mean, sd) =
-
-let normalizeData (data, row, col, mean , sd) =
-
-let loadData (filename) = *)
 
 let main () =
-	(* {output=5.2; } *)
-	(* for i = 0 to Array.length Sys.argv - 1 do
-      Printf.printf "[%i] %s\n" i Sys.argv.(i)
-    done;; *)
-
-	(* let ann = create_test_network3 () in *)
-	(* print_network ann; *)
+	
+	(* Read train files *)
 	let train_filepath = "./DATASET/Iris/train.txt" in
 	let m_train_data = (read_file train_filepath) in
 	let train_data = (process_file m_train_data ',') in
+
+	(* Read test files *)
 	let test_filepath = "./DATASET/Iris/test.txt" in
 	print_string "Data load is started" ;
 	print_newline ();
@@ -426,29 +501,58 @@ let main () =
 	let test_data = (process_file m_test_data ',') in
 	print_string "Data process is completed" ;
 	print_newline ();
+
+	(* Get the statistics, mean and standard deviation, for data *)
+	print_string "Calculating mean and standard deviation for train data.." ;
+	print_newline ();
+	let stats = (get_statistics (fst train_data)) in
+	print_string "Mean and standard deviation are calculated" ;
+	print_newline ();
+	let mean = (fst stats) in
+	let std = (snd stats) in
+	print_string "Normalization is started" ;
+	print_newline ();
+	let normalized_train = normalize (fst train_data) mean std in
+	let normalized_test = normalize (fst test_data) mean std in
+	print_string "Normalization is completed" ;
+	print_newline ();
+
 	let label_no = (List.length (List.sort_uniq compare (snd train_data))) in
-	let input_dim = (List.length (List.nth (fst train_data) 0)) in
+	let input_dim = (List.length (List.nth normalized_train 0)) in
 	let learning_rate = ref 0.5 in
 	let hidden_layer_no = 1 in
 	let neuron_no_per_layer = [6] in
 	let epochs = 500 in
+	(* Creates the network *)
+	print_string "Network creation is started" ;
+	print_newline ();
 	let ann = (initialize_network hidden_layer_no neuron_no_per_layer input_dim label_no) in
+	print_string "Network is created" ;
+	print_newline ();
+
 	Printf.printf "Input dimension: %d " input_dim;
 	print_newline ();
 	Printf.printf "The number of unique labels: %d " label_no;
 	print_newline ();
-	Printf.printf "Learning rate: %f " !learning_rate;
+	Printf.printf "Initial learning rate: %f " !learning_rate;
 	print_newline ();
 
-	trainNetwork ann (fst train_data) (snd train_data) epochs learning_rate label_no 1 0.7;
+	print_string "Training is started" ;
+	print_newline ();
+	trainNetwork ann normalized_train (snd train_data) epochs learning_rate label_no 1 0.7;
+	print_string "Training is completed" ;
+	print_newline ();
+
 	(* Prediction *)
 	(* let n = label_no in *)
 	(* let confMat = Array.make_matrix n n 0 in *)
+	print_string "Prediction is started" ;
+	print_newline ();
 	let accuracy = ref 0. in
 	List.iter2 (fun sample label ->
 		let prediction = (predict ann sample) in
 		if label = prediction then accuracy := !accuracy +. 1.;
-	) (fst train_data) (snd train_data);
+	) normalized_train (snd train_data);
 	accuracy := !accuracy /. (float_of_int (List.length (snd train_data)));
 	Printf.printf "Train accuracy: %f \n" !accuracy;
 
@@ -456,17 +560,10 @@ let main () =
 	List.iter2 (fun sample label->
 		let prediction = (predict ann sample) in
 		if label = prediction then accuracy := !accuracy +. 1.;
-	) (fst test_data) (snd test_data);
+	) normalized_test (snd test_data);
 	accuracy := !accuracy /. (float_of_int(List.length (snd test_data)));
 	Printf.printf "Test accuracy: %f \n" !accuracy;
-	(* Printf.printf "hello2";
-	let x = [[2.7810836;2.550537003];[1.465489372;2.362125076];[3.396561688;4.400293529];[1.38807019;1.850220317];[3.06407232;3.005305973];[7.627531214;2.759262235];[5.332441248;2.088626775];[6.922596716;1.77106367];[8.675418651;-0.242068655];[7.673756466;3.508563011]] in
-	let labels = [0;0;0;0;0;1;1;1;1;1] in
-	let expected = [0.;1.] in *)
-	(* print_network ann; *)
-	(* print_network ann; *)
-	(*List.iter (Printf.printf "  %f\n") !next_inputs; *)
-
+	
 	exit 0;;
 
 main ();;
