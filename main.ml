@@ -37,7 +37,12 @@ let main () =
 	print_string "Data process is completed" ;
 	print_newline ();
 
+
+	print_string "Splitting data as train and test" ;
+	print_newline ();
 	let result = Ann.test_train_split (fst p_data) (snd p_data) test_ratio in
+	print_string "Split completed" ;
+	print_newline ();
 
 	let train_features = (fst (fst result)) in
 	let train_labels = (snd (fst result)) in
@@ -101,10 +106,13 @@ let main () =
 	print_string "Training is started" ;
 	print_newline ();
 	Ann.train_network ann normalized_train train_labels epochs learning_rate label_no learning_rate_method alpha activation_func;
+	print_newline ();
 	print_string "Training is completed" ;
+	print_newline ();
 	print_newline ();
 
 	print_string "Prediction is started" ;
+	print_newline ();
 	print_newline ();
 	let accuracy = ref 0. in
 	Array.iteri (fun id label ->
@@ -134,7 +142,7 @@ let main () =
 	print_newline ();
 	print_string "Prediction is completed" ;
 	print_newline ();
-	
+
 	exit 0;;
 
 main ();;
