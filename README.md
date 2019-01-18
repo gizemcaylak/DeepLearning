@@ -27,7 +27,7 @@ $ make
 ```
 
 ```
-./ann data_filepath test_ratio delimeter learning_rate learning_rate_method alpha epochs activation_func hidden_layer_no neuron_number_1 neuron_number2 neuron_numbern  
+./ann data_filepath delimeter test_ratio learning_rate learning_rate_method alpha epochs activation_func hidden_layer_no neuron_number_1 neuron_number2 neuron_numbern  
 ```
 
 # Examples
