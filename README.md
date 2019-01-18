@@ -46,7 +46,7 @@ $ make
 
 ### Terminal code
 ```
-$ ./ann DATASET/MNIST/train_data.txt DATASET/MNIST/test_data.txt ,  0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST.txt	
+$ ./ann DATASET/MNIST/data.txt ,  0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST.txt	
 ```
 
 ## Iris
