@@ -1,6 +1,6 @@
 # DATASETS
 ## Breast Cancer , Digits, Iris, and Wine datasets are obtained from Python Scikit-learn library. 
-More detailed information can be found at the following link:
+More detailed information can be found at the following links:
 
 ### Breast Cancer
 https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html#sklearn.datasets.load_breast_cancer
