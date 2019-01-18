@@ -55,6 +55,7 @@ $ make
 ### Terminal code
 (1) 
 ```
+$ tar xf data.tar.xz data.txt
 $ ./ann DATASET/MNIST/data.txt , 0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST_1.txt	
 ```
 (2) 
