@@ -31,10 +31,18 @@ $ make
 ```
 
 # Examples
+*The results of the examples can be found in 'Results' subfolder
+
 ## MNIST
+	(1)
 	The number of hidden layers 1.
 		The number of neurons in hidden layers 
 		0 : 8
+	(2)
+	The number of hidden layers 2.
+		The number of neurons in hidden layers 
+		0 : 10
+		1 : 10 
 	The number of epochs	: 100
 	Delimeter 				: ',' -> comma
 	Test ratio 				: 0.2
@@ -45,10 +53,15 @@ $ make
 	Run on MNIST data
 
 ### Terminal code
-```
-$ ./ann DATASET/MNIST/data.txt ,  0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST.txt	
-```
+(1) 
 
+```
+$ ./ann DATASET/MNIST/data.txt , 0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST_1.txt	
+```
+(2) 
+```
+$ ./ann DATASET/MNIST/data.txt , 0.2 0.5 1 0.01 100 0 2 10 10  > Results/MNIST_2.txt
+```
 ## Iris
 	The number of hidden layers 2.
 		The number of neurons in hidden layers 
@@ -58,7 +71,7 @@ $ ./ann DATASET/MNIST/data.txt ,  0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST.txt
 	Delimeter 				: ',' -> comma
 	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
-	Learning rate 			: starts with 0.8 (1) and starts with 0.1 (2) 
+	Learning rate 			: starts with 3 (1) and starts with 0.01 (2) 
 	Activation Function 	: sigmoid(1) and relu(2)
 	Alpha 					: 0.05
 	Run on Iris data
