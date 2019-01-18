@@ -1,5 +1,5 @@
 # DeepLearning
-OCaml implementation of fully connected deep neural network
+OCaml implementation of fully connected stochastic deep neural network
 
 # How to compile the code?
 Just type make on the terminal!
