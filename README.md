@@ -54,20 +54,20 @@ $ make
 
 ### Terminal code
 (1) 
-
 ```
 $ ./ann DATASET/MNIST/data.txt , 0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST_1.txt	
 ```
 (2) 
 ```
-$ ./ann DATASET/MNIST/data.txt , 0.2 0.5 1 0.01 100 0 2 10 10  > Results/MNIST_2.txt
+$ ./ann DATASET/MNIST/data.txt , 0.2 0.5 1 0.01 100 0 2 10 10 > Results/MNIST_2.txt
 ```
+
 ## Iris
 	The number of hidden layers 2.
 		The number of neurons in hidden layers 
 		0 : 8
 		1 : 8
-	The number of epochs	: 500
+	The number of epochs	: 100
 	Delimeter 				: ',' -> comma
 	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
