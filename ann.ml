@@ -1,5 +1,5 @@
 (* File ann.ml *)
-
+open Str
 (* Activation functions and derivatives *)
 let sigmoid z = 1.0/.(1.0+.exp(-.z));;
 let derivative_sigmoid s = (s*.(1.0 -. s));;
@@ -12,7 +12,8 @@ let square x = x *. x;;
 (* Define Neural Network structures: neuron, layer, network *)
 type neuron = {
 		mutable output : float; 
-		mutable weights : float list; 
+		mutable weights : float array;
+		weight_size : int; 
 		mutable prev_delta: float;
 		mutable delta: float;
 		mutable neuron_id: int
@@ -26,14 +27,6 @@ type network = {
 		layers : (int, layer) Hashtbl.t;
 		mutable next_layer_id : int
 	};;
-
-
-(* append an element to the list 
- * el 		: element to be appended
- * f_list 	: list
- * Return appended list
- *)
-let append_el el f_list = f_list@[el];;
 
 (* Sum the float element of an array *)
 let sum l = Array.fold_left (+.) 0. l;;
@@ -54,6 +47,19 @@ let matrix n m init =
  *)
 let replace l pos a  = List.mapi (fun i x -> if i = pos then a else x) l;;
 
+(* shuffle lists a and b  *)
+let knuth_shuffle a b =
+	let n = Array.length a in
+	for i = n - 1 downto 1 do
+		let k = Random.int (i+1) in
+		let x = a.(k) in
+		a.(k) <- a.(i);
+		a.(i) <- x;
+		let y = b.(k) in
+		b.(k) <- b.(i);
+		b.(i) <- y;
+	done;;
+
 (* 
  * reads a file line by line
  * filename	: path of the file to read
@@ -70,56 +76,72 @@ let read_file filename =
 	  close_in chan;
 	  List.rev !lines ;;
 
-(* Parse the rows of the data based on the delimeter 
+let parse_line line delimeter = List.map float_of_string (Str.split_delim delimeter line);;
+
+(* Parse the rows of the data based on the delimeter
  * data 		: list of strings where each string consists of equal number of floating numbers 
  				   and the last number of each string is label
  * delimeter	: field delimeter in the sequence of floating numbers for each string in data
  * Return features and label data
  *)
 let process_file data delimeter = 
-	let p_data = ref [] in
-	let labels = ref [] in
-	let rec convert_to_nums data = 
-		if data = [] then ()
-		else
-			let row = (List.nth data 0) in
-			let splitted = (String.split_on_char delimeter row) in
-			let nums = (List.map float_of_string splitted) in
-			labels := append_el (int_of_float (List.nth nums ((List.length nums)-1))) !labels;
-			p_data := append_el (List.rev (List.tl (List.rev nums))) !p_data;
-			convert_to_nums (List.tl data) in
-	convert_to_nums data;
-	(!p_data, !labels);;
+	let tmp = parse_line (List.hd data) delimeter in
+	let data_mat = Array.make (List.length data) (Array.make (List.length tmp) 0.) in
+	let labels = Array.make (List.length data) 0 in
+	List.iteri ( fun id row ->
+		let nums = parse_line row delimeter in
+		labels.(id) <- (int_of_float (List.nth nums ((List.length nums)-1)));
+		data_mat.(id) <- Array.of_list (List.rev (List.tl (List.rev nums)));
+	) data; 
+	(data_mat, labels);;
+
+(* 
+ * Split data into random train and test subsets
+ * features		: array of float array
+ * labels 		: float array
+ * test_ratio 	: should be between 0.0 and 1.0 and 
+ 				represent the proportion of the dataset to include in the test split. 
+ *)
+let test_train_split features labels test_ratio =
+	knuth_shuffle labels features;
+	let sample_size = (Array.length labels) in
+	let test_size = int_of_float ((float_of_int sample_size) *. test_ratio) in
+	let train_size = (sample_size - test_size) in
+	let train_data = (Array.sub features 0 train_size, Array.sub labels 0 train_size) in
+	let test_data = (Array.sub features (train_size-1) test_size, Array.sub labels (train_size-1) test_size) in
+	(train_data, test_data);;
+
 
 (* calculate the mean and standard deviation per column of data 
  * data = list of list of float
  * Return tuple: (list of float:mean for each column, list of float:standard deviation for each column)
  *)
 let get_statistics data =
-	let length = float_of_int (List.length data) in
-	let mean = ref [] in
-	let sd = ref [] in
+	let length = float_of_int (Array.length data) in
+	let mean = Array.make (Array.length (data.(0))) 0. in
+	let sd = Array.make (Array.length (data.(0))) 0. in
 
-	for col = 0 to ((List.length(List.hd data))-1) do
+	for col = 0 to ((Array.length(data.(0)))-1) do
 		(* calculate the mean per column *)
 		let curr_mean = ref 0. in
-		List.iter ( fun row ->
-			curr_mean := !curr_mean +. (List.nth row col);
+		Array.iter ( fun row ->
+			curr_mean := !curr_mean +. (row.(col));
 		)data;
 		curr_mean := !curr_mean /.length;
 
 		(* calculate the std per column *)
 		let curr_std = ref 0. in
-		List.iter ( fun row ->
-			curr_std := !curr_std +. ((!curr_mean -. (List.nth row col))*.(!curr_mean -. (List.nth row col)));
+		Array.iter ( fun row ->
+			curr_std := !curr_std +. ((!curr_mean -. (row.(col)))*.(!curr_mean -. (row.(col))));
 		) data;
 		curr_std := !curr_std /.length;
 		curr_std := sqrt !curr_std;
 
-		mean := append_el !curr_mean !mean;
-		sd := append_el !curr_std !sd;
+		mean.(col) <- !curr_mean;
+		sd.(col) <- !curr_std;
 	done;
-	(!mean, !sd);;
+
+	(mean, sd);;
 
 (* normalize data based on the standard score: ((X-mean)/deviance) 
  * data 	: list of list of float
@@ -128,28 +150,28 @@ let get_statistics data =
  * Return list of list of float (normalized data)
  *)
 let normalize data mean sd =
-	let normalized_data = ref [] in
-	List.iter (fun row ->
-		let sample = ref [] in
-		List.iteri (fun id r->
-			(* Printf.printf "%f %f %f %f\n" r (List.nth mean id) (List.nth sd id) ((r-.(List.nth mean id))/.(List.nth sd id)); *)
-			if (List.nth sd id) = 0. then begin
-				sample := append_el (r-.((List.nth mean id))) !sample;
+	let normalized_data = Array.copy data in
+	Array.iteri (fun id row ->
+		let sample =  (Array.make (Array.length data.(0)) 0.) in
+		Array.iteri (fun idx r->
+			if (sd.(idx)) = 0. then begin
+				sample.(idx) <- (r-.( mean.(idx)));
 			end
 			else begin
-				sample := append_el (((r-.(List.nth mean id))/.(List.nth sd id))) !sample;
+				sample.(idx) <- (((r-.(mean.(idx)))/.(sd.(idx))));
 			end
 		)row;
-		normalized_data := append_el !sample !normalized_data;
+		normalized_data.(id) <- sample;
 	)data;
-	!normalized_data;;
+	normalized_data;;
 
 (* create a neuron with specified id 
  * neuron_id : integer id (unique id of neuron)
  *)
-let create_neuron neuron_id = {
+let create_neuron neuron_id weights_size = {
 	output = 0.; 
-	weights = []; 
+	weights = Array.make weights_size 0.; 
+	weight_size = weights_size;
 	prev_delta = 0.; 
 	delta = 0.; 
 	neuron_id = neuron_id
@@ -184,7 +206,7 @@ let print_network ann =
 	let layers = ann.layers in
 	Hashtbl.iter (fun id layers -> Printf.printf "Layer_%d:\n Weights:\n" id; let neurons = layers.neurons in 
 		Hashtbl.iter (fun id neurons -> Printf.printf "Neuron_%d:\n Output: %f\n Delta: %f\n" id neurons.output neurons.delta; 
-				List.iter (Printf.printf "  %f\n") neurons.weights) neurons;) layers;;
+				Array.iter (Printf.printf "  %f\n") neurons.weights) neurons;) layers;;
 	
 (* Initializes neuron weights randomly *)
 let randomly_initialize_weights neuron_id layer prev_layer_size =
@@ -193,7 +215,7 @@ let randomly_initialize_weights neuron_id layer prev_layer_size =
 	let counter = ref 0 in
 	let rec random_append counter =
 		let random_n = (Random.float 2.)-. 1. in (* Random number between -1 and 1 *)
-		neuron.weights <- append_el random_n neuron.weights;
+		neuron.weights.(!counter) <- random_n;
 		counter := !counter + 1;
 		if !counter < prev_layer_size then random_append counter in
 	random_append counter;;
@@ -201,7 +223,7 @@ let randomly_initialize_weights neuron_id layer prev_layer_size =
 (* Add newly created neuron to the specified layer *)
 let add_neuron layer prev_layer_size = 
 	let id = layer.next_neuron_id in
-	Hashtbl.add layer.neurons id (create_neuron id);
+	Hashtbl.add layer.neurons id (create_neuron id prev_layer_size);
 	randomly_initialize_weights id layer prev_layer_size;
 	layer.next_neuron_id <- layer.next_neuron_id + 1;
 	id;;
@@ -236,9 +258,9 @@ let initialize_network hidden_layer_no neuron_no_per_layer input_dim output_dim 
 	let ann = create_network (hidden_layer_no + 1) in
 
 	(* create the first hidden layer *)
-	let first_layer = (create_layer (List.nth neuron_no_per_layer 0) 0) in
+	let first_layer = (create_layer (List.hd neuron_no_per_layer) 0) in
 	(* weight size: input_no + 1 bias term*)
-	add_multiple_neuron (List.nth neuron_no_per_layer 0) first_layer (input_dim+1);
+	add_multiple_neuron (List.hd neuron_no_per_layer) first_layer (input_dim+1);
 	ignore(add_layer first_layer ann);
 
 	(* create other hidden layers *)
@@ -255,16 +277,15 @@ let initialize_network hidden_layer_no neuron_no_per_layer input_dim output_dim 
 	ann;;
 
 (* calculate "weighted sum" of inputs added a bias 
- * weights 	: a list of float numbers
+ * weights 	: an array of float numbers
  * input 	: a list of float numbers
  * return activation result, float number
  *)
-let activate weights input =
-	let activation = ref (List.hd (List.rev weights)) in (* activation = bias *)
-	let rev_weights = (List.rev (List.tl (List.rev weights))) in
-	List.iter2 (fun w i ->
-		activation := !activation +. (w *. i);
-	) rev_weights !input;	
+let activate weights weight_size input =
+	let activation = ref weights.(weight_size-1) in (* activation = bias *)
+	List.iteri (fun id i ->
+		activation := !activation +. ((weights.(id)) *. i);
+	) !input;	
 	!activation;;
 
 (* 
@@ -277,10 +298,10 @@ let activate weights input =
  *)
 let forward_propagate ann input activation_func =
 	let next_inputs = ref [] in
-	List.iter (fun i ->
-		next_inputs := append_el i !next_inputs;
+	Array.iter (fun i ->
+		next_inputs := i :: !next_inputs;
 	) input;
-
+	next_inputs := (List.rev !next_inputs);
 	let outputs = ref [] in
 	(* Propagate the input layer by layer *)
 	for i = 0 to ((Hashtbl.length ann.layers)-1) do
@@ -288,17 +309,17 @@ let forward_propagate ann input activation_func =
 		(* Calculate the output for each layer *)
 		for j = 0 to ((Hashtbl.length curr_l.neurons)-1) do
 			let curr_n = (get_neuron j curr_l) in
-			let activation =  ref (activate curr_n.weights next_inputs) in
+			let activation =  ref (activate curr_n.weights (curr_n.weight_size) next_inputs) in
 			if activation_func = 0 then 
 				activation := (sigmoid !activation)
 			else
 				activation := (relu !activation);
 			curr_n.output <- !activation;
-			outputs := append_el (!activation) !outputs;
+			outputs := (!activation) :: !outputs;
 		done;
 		next_inputs := [];
 		List.iter ( fun o ->
-			next_inputs := append_el o !next_inputs;
+			next_inputs := o :: !next_inputs;
 		) !outputs;	
 		outputs := [];
 	done;
@@ -313,15 +334,15 @@ let backpropagate ann expected activation_func =
 	(* backpropagate output layer *)
 	let output_l = (get_layer ((Hashtbl.length ann.layers)-1) ann) in
 	
-	let neurons = output_l.neurons in
 	let derivative = ref derivative_relu in
 	if activation_func = 0 then derivative := derivative_sigmoid;
 	 
-	Hashtbl.iter ( fun id n ->
-		let diff = ((n.output)-. (List.nth expected id)) in
+	List.iteri ( fun id e ->
+		let n = get_neuron id output_l in
+		let diff = ((n.output)-. e) in
 		n.prev_delta <- n.delta; 
 		n.delta <- (diff *. (!derivative n.output));
-	) neurons;
+	) expected;
 
 	let err = ref 0. in
 	(* backpropagate other layers *)
@@ -331,7 +352,7 @@ let backpropagate ann expected activation_func =
 		for j = 0 to ((Hashtbl.length curr_l.neurons)-1) do
 			err := 0.;
 			Hashtbl.iter (fun id nln ->
-				err := !err +. ((nln.delta) *.(List.nth (nln.weights) j));
+				err := !err +. ((nln.delta) *.(nln.weights.(j)));
 			)(next_l.neurons);
 			let curr_n = (get_neuron j curr_l) in
 			curr_n.prev_delta <- curr_n.delta; (* add moment: keep one previous delta*)
@@ -349,18 +370,19 @@ let backpropagate ann expected activation_func =
  *)
 let update_weights ann input learning_rate alpha =
 	let tmp = ref [] in
-	tmp := List.append input !tmp;
-	
+	Array.iter (fun i ->
+		tmp := i :: !tmp;
+	)input;
+	tmp := (List.rev !tmp);
+
 	(* update weights for first layer *)
 	let first_l = (get_layer 0 ann) in
 	let neurons = first_l.neurons in
 	Hashtbl.iter ( fun id n ->
-		let weights = ref [] in
-		List.iter2 (fun t w->	
-			weights := append_el (w -. (learning_rate *. t *. (((1.-.alpha) *. n.delta)+.(alpha*.n.prev_delta)))) !weights;
-		) !tmp (List.rev (List.tl (List.rev (n.weights))));		
-		weights := append_el ((List.nth n.weights (List.length !tmp)) -. (learning_rate *. (((1.-.alpha) *. n.delta)+.(alpha *. n.prev_delta)))) !weights;
-		n.weights <- !weights;
+		List.iteri (fun id t->	
+			n.weights.(id) <- (n.weights.(id)) -. (learning_rate *. t *. (((1.-.alpha) *. n.delta)+.(alpha*.n.prev_delta))) ;
+		) !tmp;
+		n.weights.((n.weight_size)-1) <- (n.weights.((n.weight_size)-1)) -. (learning_rate *. (((1.-.alpha) *. n.delta)+.(alpha *. n.prev_delta)));
 	) neurons;
 	
 	(* Update weigths for other hidden layers *)
@@ -370,16 +392,15 @@ let update_weights ann input learning_rate alpha =
 		let prev_l = (get_layer (i-1) ann) in
 		for j = 0 to ((Hashtbl.length prev_l.neurons)-1) do
 				let curr_n = (get_neuron j prev_l) in
-				tmp := append_el (curr_n.output) !tmp;
+				tmp := (curr_n.output) :: !tmp;
 		done;
+		tmp := (List.rev !tmp);
 		(* calculate new weigths based on update formula *)
 		Hashtbl.iter (fun id curr_n ->
-			let weights = ref [] in
-			List.iter2 (fun t w->			
-				weights := append_el (w -. (learning_rate *.t *. (((1.-.alpha) *. (curr_n.delta))+. (alpha*.(curr_n.prev_delta))))) !weights;
-			) !tmp (List.rev (List.tl (List.rev (curr_n.weights))));		
-			weights := append_el ((List.nth curr_n.weights (List.length !tmp)) -. (learning_rate *. (((1.-.alpha) *. (curr_n.delta)) +. (alpha *. (curr_n.prev_delta))))) !weights;
-			curr_n.weights <- !weights;
+			List.iteri (fun id t->			
+				curr_n.weights.(id) <- (curr_n.weights.(id)) -. (learning_rate *. t *. (((1.-.alpha) *. curr_n.delta)+.(alpha*.curr_n.prev_delta))) ;
+			) !tmp ;		
+			curr_n.weights.((curr_n.weight_size)-1) <- (curr_n.weights.((curr_n.weight_size)-1)) -. (learning_rate *. (((1.-.alpha) *. curr_n.delta)+.(alpha *. curr_n.prev_delta)));
 		) (curr_l.neurons);
 	done;;
 
@@ -387,7 +408,7 @@ let update_weights ann input learning_rate alpha =
  * Train the network
  * ann 				: network
  * train_data 		: a list of list of float
- * labels 			: a list of float indicates class labels for each sample
+ * labels 			: an array of float indicates class labels for each sample
  * epochs 			: the number of iterations
  * learning_rate	: a float number that determines how big the step for each update of parameters.
  * labels_no  		: the number of unique labels
@@ -400,24 +421,29 @@ let update_weights ann input learning_rate alpha =
 let train_network ann train_data labels epochs learning_rate labels_no lr_method alpha activation_func =
 	let total_err = ref 0. in
 	let outputs = ref [] in
-	let sample_size = float_of_int(List.length train_data) in
+	let sample_size = float_of_int(Array.length train_data) in
 	for i = 1 to epochs do
 		total_err := 0.;
 		let expected = ref [] in
-		List.iter2 (fun sample label->
+		Array.iteri (fun id label->
+			let sample = train_data.(id) in
 			outputs := !(forward_propagate ann sample activation_func);
 			expected := [];
 			for k = 0 to labels_no-1 do
 				if k = label then
-					expected := append_el 1. !expected
+					expected := 1. :: !expected
 				else
-					expected := append_el 0. !expected;
-
-				total_err := !total_err +. (square ((List.nth !outputs k)-.(List.nth !expected k)));
+					expected := 0. :: !expected;
 			done;
+
+			expected := (List.rev !expected);
+			List.iter2 (fun o e ->
+				total_err := !total_err +. (square (o-.e));
+			)!outputs !expected;
+
 			backpropagate ann !expected activation_func;
 			update_weights ann sample !learning_rate alpha;
-		) train_data labels;
+		) labels;
 
 		if lr_method = 1 then begin
 			if i mod int_of_float((sqrt sample_size)) = 0 then learning_rate := !learning_rate /. 1.5;
@@ -452,61 +478,9 @@ let predict ann input activation_func=
 let create_confusion_matrix ann data labels labels_no activation_func =
 	let confusion_matrix = matrix labels_no labels_no 0. in
 
-	List.iter2 (fun sample label ->
+	Array.iteri (fun id label ->
+		let sample = data.(id) in
 		let prediction = (predict ann sample activation_func) in
 		confusion_matrix.(label).(prediction) <- (confusion_matrix.(label).(prediction))+.1.;
-	) data labels;
+	) labels;
 	confusion_matrix;;
-
-let create_test_network2 () =
-	let ann = (initialize_network 1 [1] 2 2) in
-	 (* create the first hidden layer *)
-	let first_layer = (get_layer 0 ann) in
-	let weights_0 = [0.13436424411240122; 0.8474337369372327; 0.763774618976614] in
-	(get_neuron 0 first_layer).weights <- weights_0;
-	let weights_1 = [0.2550690257394217; 0.49543508709194095] in
-	let weights_2 = [0.4494910647887381; 0.651592972722763] in
-
-	let sec_layer = (get_layer 1 ann) in
-	(get_neuron 0 sec_layer).weights <- weights_1;
-	(get_neuron 1 sec_layer).weights <- weights_2;
-	ann;;
-
-let create_test_network3 () =
-	let ann = (initialize_network 1 [1] 2 2) in
-	 (* create the first hidden layer *)
-	let first_layer = (get_layer 0 ann) in
-	let weights_0 = [0.13436424411240122; 0.8474337369372327; 0.763774618976614] in
-	(get_neuron 0 first_layer).weights <- weights_0;
-	(get_neuron 0 first_layer).output <-  0.7105668883115941;
-	let weights_1 = [0.2550690257394217; 0.49543508709194095] in
-	let weights_2 = [0.4494910647887381; 0.651592972722763] in
-
-	let sec_layer = (get_layer 1 ann) in
-	(get_neuron 0 sec_layer).output <-  0.6213859615555266;
-	(get_neuron 1 sec_layer).output <-  0.6573693455986976;
-	(get_neuron 0 sec_layer).weights <- weights_1;
-	(get_neuron 1 sec_layer).weights <- weights_2;
-
-	ann;;
-
-let create_test_network () =
-	let ann = (initialize_network 1 [2] 2 2) in
-	 (* create the first hidden layer *)
-	let first_layer = (get_layer 0 ann) in
-	let weights_0 = [1.482313569067226;1.8308790073202204;1.078381922048799] in
-	(get_neuron 0 first_layer).weights <- weights_0;
-	let weights_1 = [0.23244990332399884;0.3621998343835864;0.40289821191094327] in
-	(get_neuron 1 first_layer).weights <- weights_1;
-
-	let sec_layer = (get_layer 1 ann) in
-	(get_neuron 0 sec_layer).output <- 0.6213859615555266;
-	(get_neuron 1 sec_layer).output <- 0.6573693455986976;
-
-	let weights_2 = [2.5001872433501404;0.7887233511355132;-1.1026649757805829] in
-	(get_neuron 0 sec_layer).weights <- weights_2;
-
-	let weights_3 = [2.5001872433501404;0.7887233511355132;-1.1026649757805829] in
-	(get_neuron 1 sec_layer).weights <- weights_3;
-
-	ann;;

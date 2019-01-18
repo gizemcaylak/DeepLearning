@@ -11,10 +11,10 @@ $ make
 
 ### Parameters
 ```
-@train_filepath			: file path to train file
-@test_filepath			: file path to corresponding test file
+@data_filepath			: file path to train file
 @delimeter 			: a char that is field delimeter in the sequence of floating numbers for each 
 								string in data e.g. ','
+@test_ratio			: represent the proportion of the dataset to include in the test split, should be 								between 0.0 and 1.0  
 @Learning_rate 			: initial learning rate, a floating point number generally small
 @learning_rate_method		:0 = learning rate does not change througout program
 				 1 = learning rate decreases after every sqrt(sample size) iteration
@@ -27,7 +27,7 @@ $ make
 ```
 
 ```
-./ann train_filepath test_file_path delimeter learning_rate learning_rate_method alpha epochs activation_func hidden_layer_no neuron_number_1 neuron_number2 neuron_numbern  
+./ann data_filepath test_ratio delimeter learning_rate learning_rate_method alpha epochs activation_func hidden_layer_no neuron_number_1 neuron_number2 neuron_numbern  
 ```
 
 # Examples
@@ -36,7 +36,8 @@ $ make
 		The number of neurons in hidden layers 
 		0 : 8
 	The number of epochs	: 100
-	Delimeter 				: '\ ' -> space
+	Delimeter 				: ',' -> comma
+	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
 	Learning rate 			: starts with 0.5
 	Activation Function 	: sigmoid
@@ -45,7 +46,7 @@ $ make
 
 ### Terminal code
 ```
-$ ./ann DATASET/MNIST/train_data.txt DATASET/MNIST/test_data.txt \  0.5 1 0.01 100 0 1 8
+$ ./ann DATASET/MNIST/train_data.txt DATASET/MNIST/test_data.txt ,  0.2 0.5 1 0.01 100 0 1 8 > Results/MNIST.txt	
 ```
 
 ## Iris
@@ -55,6 +56,7 @@ $ ./ann DATASET/MNIST/train_data.txt DATASET/MNIST/test_data.txt \  0.5 1 0.01 1
 		1 : 8
 	The number of epochs	: 500
 	Delimeter 				: ',' -> comma
+	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
 	Learning rate 			: starts with 0.8 (1) and starts with 0.1 (2) 
 	Activation Function 	: sigmoid(1) and relu(2)
@@ -64,11 +66,11 @@ $ ./ann DATASET/MNIST/train_data.txt DATASET/MNIST/test_data.txt \  0.5 1 0.01 1
 ### Terminal code
 (1) with Sigmoid Function
 ```
-$ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.8 1 0.05 500 0 2 8 8	
+$ ./ann DATASET/Iris/data.txt , 0.2 3 1 0.05 100 0 2 3 5  > Results/iris_sigmoid.txt	
 ```
 (2) with Relu Function 
 ```
-$ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.1 1 0.05 500 1 2 8 8	
+$ ./ann DATASET/Iris/data.txt , 0.2 0.01 1 0.05 100 1 2 8 8 > Results/iris_relu.txt
 ```
 
 ## Wine
@@ -77,6 +79,7 @@ $ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.1 1 0.05 500 1 2 8 8
 		0 : 6
 	The number of epochs	: 100
 	Delimeter 				: ',' -> comma
+	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
 	Learning rate 			: starts with 3 
 	Activation Function 	: sigmoid
@@ -85,7 +88,7 @@ $ ./ann DATASET/Iris/train.txt DATASET/Iris/test.txt , 0.1 1 0.05 500 1 2 8 8
 
 ### Terminal code
 ```
-$ ./ann DATASET/Wine/train.txt DATASET/Wine/test.txt , 3 0 0.05 100 0 1 6
+$ ./ann DATASET/Wine/data.txt , 0.2 3 0 0.05 100 0 1 6 > Results/wine.txt
 ```
 
 ## Breast Cancer
@@ -94,6 +97,7 @@ $ ./ann DATASET/Wine/train.txt DATASET/Wine/test.txt , 3 0 0.05 100 0 1 6
 		0 : 10
 	The number of epochs	: 100
 	Delimeter 				: ',' -> comma
+	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
 	Learning rate 			: starts with 0.5 
 	Activation Function 	: sigmoid
@@ -102,7 +106,7 @@ $ ./ann DATASET/Wine/train.txt DATASET/Wine/test.txt , 3 0 0.05 100 0 1 6
 
 ### Terminal code
 ```
-$ ./ann DATASET/Breast_cancer/train.txt DATASET/Breast_cancer/test.txt , 0.5 1 0.01 100 0 1 10
+$ ./ann DATASET/Breast_cancer/data.txt , 0.2 0.5 1 0.01 100 0 1 10 > Results/breast_cancer.txt
 ```
 
 ## Digits
@@ -112,6 +116,7 @@ $ ./ann DATASET/Breast_cancer/train.txt DATASET/Breast_cancer/test.txt , 0.5 1 0
 		1 : 10
 	The number of epochs	: 100
 	Delimeter 				: ',' -> comma
+	Test ratio 				: 0.2
 	Learning rate method 	: Learning rate decreases
 	Learning rate 			: starts with 0.5 
 	Activation Function 	: sigmoid
@@ -120,6 +125,6 @@ $ ./ann DATASET/Breast_cancer/train.txt DATASET/Breast_cancer/test.txt , 0.5 1 0
 
 ### Terminal code
 ```
-$ ./ann DATASET/Digits/train.txt DATASET/Digits/test.txt , 0.5 1 0.01 100 0 2 10 10
+$ ./ann DATASET/Digits/data.txt , 0.2 0.5 1 0.01 100 0 2 10 10 > Results/digits.txt
 ```
 

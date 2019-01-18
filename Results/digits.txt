@@ -1,0 +1,137 @@
+Data file path DATASET/Digits/data.txt
+Data load is started
+Data load is complete
+Data process is started
+Data process is completed
+Calculating mean and standard deviation for training data..
+Mean and standard deviation are calculated
+Normalization is started
+Normalization is completed
+Network creation is started
+Network is created
+The number of total samples: 1797 
+The number of train samples: 1438 
+The number of test samples: 359 
+Input dimension: 64 
+The number of unique labels: 10 
+Initial learning rate: 0.500000 
+Alpha: 0.010000 
+The number of epochs: 100 
+Training is started
+Epoch = 1	 Lrate = 0.500000	 Error = 1052.641857
+Epoch = 2	 Lrate = 0.500000	 Error = 487.452891
+Epoch = 3	 Lrate = 0.500000	 Error = 252.672597
+Epoch = 4	 Lrate = 0.500000	 Error = 163.459367
+Epoch = 5	 Lrate = 0.500000	 Error = 124.957433
+Epoch = 6	 Lrate = 0.500000	 Error = 92.179362
+Epoch = 7	 Lrate = 0.500000	 Error = 73.741353
+Epoch = 8	 Lrate = 0.500000	 Error = 60.894475
+Epoch = 9	 Lrate = 0.500000	 Error = 55.653161
+Epoch = 10	 Lrate = 0.500000	 Error = 48.343689
+Epoch = 11	 Lrate = 0.500000	 Error = 36.652390
+Epoch = 12	 Lrate = 0.500000	 Error = 30.788592
+Epoch = 13	 Lrate = 0.500000	 Error = 27.968975
+Epoch = 14	 Lrate = 0.500000	 Error = 25.970701
+Epoch = 15	 Lrate = 0.500000	 Error = 23.392769
+Epoch = 16	 Lrate = 0.500000	 Error = 23.213160
+Epoch = 17	 Lrate = 0.500000	 Error = 20.718365
+Epoch = 18	 Lrate = 0.500000	 Error = 18.572820
+Epoch = 19	 Lrate = 0.500000	 Error = 16.733210
+Epoch = 20	 Lrate = 0.500000	 Error = 15.682729
+Epoch = 21	 Lrate = 0.500000	 Error = 14.601574
+Epoch = 22	 Lrate = 0.500000	 Error = 13.947301
+Epoch = 23	 Lrate = 0.500000	 Error = 13.463914
+Epoch = 24	 Lrate = 0.500000	 Error = 13.041285
+Epoch = 25	 Lrate = 0.500000	 Error = 12.666648
+Epoch = 26	 Lrate = 0.500000	 Error = 12.328880
+Epoch = 27	 Lrate = 0.500000	 Error = 12.025091
+Epoch = 28	 Lrate = 0.500000	 Error = 11.746361
+Epoch = 29	 Lrate = 0.500000	 Error = 11.493032
+Epoch = 30	 Lrate = 0.500000	 Error = 11.255867
+Epoch = 31	 Lrate = 0.500000	 Error = 11.039481
+Epoch = 32	 Lrate = 0.500000	 Error = 10.831725
+Epoch = 33	 Lrate = 0.500000	 Error = 10.644073
+Epoch = 34	 Lrate = 0.500000	 Error = 10.456686
+Epoch = 35	 Lrate = 0.500000	 Error = 10.294878
+Epoch = 36	 Lrate = 0.500000	 Error = 10.121883
+Epoch = 37	 Lrate = 0.333333	 Error = 9.992076
+Epoch = 38	 Lrate = 0.333333	 Error = 9.740667
+Epoch = 39	 Lrate = 0.333333	 Error = 9.612993
+Epoch = 40	 Lrate = 0.333333	 Error = 9.495677
+Epoch = 41	 Lrate = 0.333333	 Error = 9.412077
+Epoch = 42	 Lrate = 0.333333	 Error = 9.314778
+Epoch = 43	 Lrate = 0.333333	 Error = 9.235473
+Epoch = 44	 Lrate = 0.333333	 Error = 9.146725
+Epoch = 45	 Lrate = 0.333333	 Error = 9.069963
+Epoch = 46	 Lrate = 0.333333	 Error = 8.983587
+Epoch = 47	 Lrate = 0.333333	 Error = 8.916190
+Epoch = 48	 Lrate = 0.333333	 Error = 8.867659
+Epoch = 49	 Lrate = 0.333333	 Error = 8.793177
+Epoch = 50	 Lrate = 0.333333	 Error = 8.724595
+Epoch = 51	 Lrate = 0.333333	 Error = 8.662451
+Epoch = 52	 Lrate = 0.333333	 Error = 8.599849
+Epoch = 53	 Lrate = 0.333333	 Error = 8.539914
+Epoch = 54	 Lrate = 0.333333	 Error = 8.478500
+Epoch = 55	 Lrate = 0.333333	 Error = 8.417316
+Epoch = 56	 Lrate = 0.333333	 Error = 8.354286
+Epoch = 57	 Lrate = 0.333333	 Error = 8.292937
+Epoch = 58	 Lrate = 0.333333	 Error = 8.235135
+Epoch = 59	 Lrate = 0.333333	 Error = 8.182501
+Epoch = 60	 Lrate = 0.333333	 Error = 8.133381
+Epoch = 61	 Lrate = 0.333333	 Error = 8.087146
+Epoch = 62	 Lrate = 0.333333	 Error = 8.042822
+Epoch = 63	 Lrate = 0.333333	 Error = 7.999886
+Epoch = 64	 Lrate = 0.333333	 Error = 7.957222
+Epoch = 65	 Lrate = 0.333333	 Error = 7.912715
+Epoch = 66	 Lrate = 0.333333	 Error = 7.860290
+Epoch = 67	 Lrate = 0.333333	 Error = 7.780600
+Epoch = 68	 Lrate = 0.333333	 Error = 7.604600
+Epoch = 69	 Lrate = 0.333333	 Error = 7.199594
+Epoch = 70	 Lrate = 0.333333	 Error = 7.028628
+Epoch = 71	 Lrate = 0.333333	 Error = 6.956743
+Epoch = 72	 Lrate = 0.333333	 Error = 6.901873
+Epoch = 73	 Lrate = 0.333333	 Error = 6.855302
+Epoch = 74	 Lrate = 0.222222	 Error = 6.813923
+Epoch = 75	 Lrate = 0.222222	 Error = 6.750640
+Epoch = 76	 Lrate = 0.222222	 Error = 6.726783
+Epoch = 77	 Lrate = 0.222222	 Error = 6.704917
+Epoch = 78	 Lrate = 0.222222	 Error = 6.684133
+Epoch = 79	 Lrate = 0.222222	 Error = 6.664150
+Epoch = 80	 Lrate = 0.222222	 Error = 6.644838
+Epoch = 81	 Lrate = 0.222222	 Error = 6.626117
+Epoch = 82	 Lrate = 0.222222	 Error = 6.607933
+Epoch = 83	 Lrate = 0.222222	 Error = 6.590243
+Epoch = 84	 Lrate = 0.222222	 Error = 6.573011
+Epoch = 85	 Lrate = 0.222222	 Error = 6.556206
+Epoch = 86	 Lrate = 0.222222	 Error = 6.539803
+Epoch = 87	 Lrate = 0.222222	 Error = 6.523775
+Epoch = 88	 Lrate = 0.222222	 Error = 6.508101
+Epoch = 89	 Lrate = 0.222222	 Error = 6.492762
+Epoch = 90	 Lrate = 0.222222	 Error = 6.477737
+Epoch = 91	 Lrate = 0.222222	 Error = 6.463008
+Epoch = 92	 Lrate = 0.222222	 Error = 6.448560
+Epoch = 93	 Lrate = 0.222222	 Error = 6.434376
+Epoch = 94	 Lrate = 0.222222	 Error = 6.420441
+Epoch = 95	 Lrate = 0.222222	 Error = 6.406740
+Epoch = 96	 Lrate = 0.222222	 Error = 6.393258
+Epoch = 97	 Lrate = 0.222222	 Error = 6.379981
+Epoch = 98	 Lrate = 0.222222	 Error = 6.366894
+Epoch = 99	 Lrate = 0.222222	 Error = 6.353984
+Epoch = 100	 Lrate = 0.222222	 Error = 6.341234
+Training is completed
+Prediction is started
+Overall train accuracy: 0.996523 
+Overall test accuracy: 0.938719 
+Test class accuracies 
+Class-0 accuracy: 1.000000 
+Class-1 accuracy: 0.941176 
+Class-2 accuracy: 0.969697 
+Class-3 accuracy: 0.948718 
+Class-4 accuracy: 0.944444 
+Class-5 accuracy: 0.941176 
+Class-6 accuracy: 1.000000 
+Class-7 accuracy: 0.904762 
+Class-8 accuracy: 0.825000 
+Class-9 accuracy: 0.941176 
+
+Prediction is completed
